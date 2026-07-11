@@ -4,7 +4,7 @@
 
 // ---------- Adresse courriel qui reçoit les leads ----------
 // Pour changer d'adresse, modifiez simplement la ligne ci-dessous.
-const LEAD_EMAIL = 'latelierautomtl@gmail.com';
+const LEAD_EMAIL = 'info@lateliermtl.com';
 const FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + LEAD_EMAIL;
 
 // ---------- Navigation : fond au défilement ----------
