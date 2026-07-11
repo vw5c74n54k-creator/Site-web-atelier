@@ -142,6 +142,9 @@ quoteForm.addEventListener('submit', async (e) => {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    const out = await res.json().catch(() => ({}));
+    // FormSubmit répond 200 même en échec (ex. formulaire non activé)
+    if (out.success === 'false' || out.success === false) throw new Error(out.message || 'refus FormSubmit');
 
     formWrap.hidden = true;
     successBox.hidden = false;
