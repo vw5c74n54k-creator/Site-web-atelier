@@ -175,5 +175,21 @@ document.querySelectorAll('[data-open-quote]').forEach((btn) =>
   })
 );
 
+// ---------- Effet 3D au survol des cartes ----------
+if (window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches) {
+  document.querySelectorAll('.service-card, .detail-card').forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      card.style.transform =
+        'translateY(-8px) rotateX(' + (-y * 7).toFixed(2) + 'deg) rotateY(' + (x * 9).toFixed(2) + 'deg)';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
+}
+
 // ---------- Année du footer ----------
 document.getElementById('year').textContent = new Date().getFullYear();
