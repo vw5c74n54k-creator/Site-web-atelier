@@ -220,8 +220,11 @@ quoteForm.addEventListener('submit', async (e) => {
   data._template = 'table';
   data._captcha = 'false';
 
-  // Répondre directement au client depuis la boîte de réception
+  // Répondre directement au client depuis la boîte de réception.
+  // `email` en plus de `Courriel` : FormSubmit cherche ce nom précis pour
+  // savoir à qui adresser l'accusé de réception.
   data._replyto = data['Courriel'] || '';
+  data.email = data['Courriel'] || '';
 
   // Accusé de réception envoyé automatiquement au client
   data._autoresponse =
