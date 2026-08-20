@@ -10,8 +10,8 @@ const FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + LEAD_EMAIL;
 // ---------- HubSpot CRM ----------
 // Remplissez ces deux valeurs (voir les instructions données avec ce changement).
 // Tant qu'elles sont vides, HubSpot est simplement ignoré : le site fonctionne normalement.
-const HUBSPOT_PORTAL_ID = ''; // ex. '12345678'
-const HUBSPOT_FORM_GUID = ''; // ex. 'a1b2c3d4-5e6f-7890-abcd-ef1234567890'
+const HUBSPOT_PORTAL_ID = '343546650';
+const HUBSPOT_FORM_GUID = 'd602489c-05e2-48e2-a58b-fd5a1a267d5b';
 
 // Charge le code de suivi HubSpot (visiteurs, pages vues, association des leads)
 if (HUBSPOT_PORTAL_ID) {
