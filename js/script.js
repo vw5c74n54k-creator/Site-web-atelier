@@ -219,6 +219,23 @@ quoteForm.addEventListener('submit', async (e) => {
   data._template = 'table';
   data._captcha = 'false';
 
+  // Répondre directement au client depuis la boîte de réception
+  data._replyto = data['Courriel'] || '';
+
+  // Accusé de réception envoyé automatiquement au client
+  data._autoresponse =
+    'Bonjour ' + (data['Prénom'] || '') + ',\n\n' +
+    'Merci d\'avoir demandé une soumission chez L\'Atelier Esthétique Automobile.\n\n' +
+    'Nous avons bien reçu votre demande pour : ' + (data['Service'] || 'nos services') + '.\n\n' +
+    'Un expert de notre service des ventes vous contactera sous peu pour discuter ' +
+    'de votre projet et vous préparer une soumission personnalisée.\n\n' +
+    'Pour toute question, écrivez-nous à ' + LEAD_EMAIL + ' ou appelez-nous au 514 967-7006.\n\n' +
+    'Au plaisir de vous rencontrer,\n\n' +
+    'L\'Atelier Esthétique Automobile\n' +
+    'Wrap · PPF · Lettrage · Vitres teintées\n' +
+    'Montréal, QC\n' +
+    'www.lateliermtl.com';
+
   // Le CRM d'abord : le lead est enregistré même si le courriel échoue ensuite.
   await envoyerVersHubSpot(data);
 
