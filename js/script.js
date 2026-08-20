@@ -7,6 +7,14 @@
 const LEAD_EMAIL = 'latelierautomtl@gmail.com';
 const FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + LEAD_EMAIL;
 
+// ---------- Suivi Google Analytics ----------
+// Enregistre une demande de soumission. « methode » distingue l'envoi normal
+// du repli par courriel, pour qu'aucun lead ne soit invisible dans les rapports.
+const suivreLead = (methode, service) => {
+  if (typeof gtag !== 'function') return; // bloqueur de pub ou script indisponible
+  gtag('event', 'generate_lead', { methode: methode, service: service || 'non précisé', value: 1 });
+};
+
 // ---------- Navigation : fond au défilement ----------
 const nav = document.getElementById('nav');
 const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 40);
@@ -146,10 +154,12 @@ quoteForm.addEventListener('submit', async (e) => {
     // FormSubmit répond 200 même en échec (ex. formulaire non activé)
     if (out.success === 'false' || out.success === false) throw new Error(out.message || 'refus FormSubmit');
 
+    suivreLead('formulaire', data['Service']);
     formWrap.hidden = true;
     successBox.hidden = false;
     quoteForm.reset();
   } catch (err) {
+    suivreLead('courriel', data['Service']);
     // Repli : ouvre le client courriel du visiteur avec le lead pré-rempli
     const body = Object.entries(data)
       .filter(([k]) => !k.startsWith('_'))
