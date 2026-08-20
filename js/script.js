@@ -11,12 +11,12 @@ const FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + LEAD_EMAIL;
 // Remplissez ces deux valeurs (voir les instructions données avec ce changement).
 // Tant qu'elles sont vides, HubSpot est simplement ignoré : le site fonctionne normalement.
 const HUBSPOT_PORTAL_ID = '343546650';
-const HUBSPOT_FORM_GUID = 'd602489c-05e2-48e2-a58b-fd5a1a267d5b';
+const HUBSPOT_FORM_GUID = 'cc09b0ee-62dd-402f-813c-deafa7c4877a';
 // 'contact' = formulaire standard (crée une fiche contact)
 // 'ticket'  = formulaire de support (crée un contact ET un ticket dans le pipeline)
 // Pour passer aux tickets : créer le formulaire de support dans HubSpot, coller son
 // identifiant ci-dessus, puis mettre 'ticket' ici. Les deux doivent changer ensemble.
-const HUBSPOT_FORM_TYPE = 'contact';
+const HUBSPOT_FORM_TYPE = 'ticket';
 
 // Charge le code de suivi HubSpot (visiteurs, pages vues, association des leads)
 if (HUBSPOT_PORTAL_ID) {
