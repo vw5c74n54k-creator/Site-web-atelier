@@ -7,6 +7,64 @@
 const LEAD_EMAIL = 'latelierautomtl@gmail.com';
 const FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + LEAD_EMAIL;
 
+// ---------- HubSpot CRM ----------
+// Remplissez ces deux valeurs (voir les instructions données avec ce changement).
+// Tant qu'elles sont vides, HubSpot est simplement ignoré : le site fonctionne normalement.
+const HUBSPOT_PORTAL_ID = ''; // ex. '12345678'
+const HUBSPOT_FORM_GUID = ''; // ex. 'a1b2c3d4-5e6f-7890-abcd-ef1234567890'
+
+// Charge le code de suivi HubSpot (visiteurs, pages vues, association des leads)
+if (HUBSPOT_PORTAL_ID) {
+  const hs = document.createElement('script');
+  hs.async = true;
+  hs.defer = true;
+  hs.id = 'hs-script-loader';
+  hs.src = 'https://js.hs-scripts.com/' + HUBSPOT_PORTAL_ID + '.js';
+  document.head.appendChild(hs);
+}
+
+// Récupère le cookie de suivi HubSpot pour relier le lead à son parcours de visite
+const cookieHubSpot = () => {
+  const m = document.cookie.match(/(^|;)\s*hubspotutk=([^;]*)/);
+  return m ? m[2] : undefined;
+};
+
+// Envoie le lead dans le CRM. Ne lève jamais d'erreur : l'envoi principal doit continuer.
+const envoyerVersHubSpot = async (data) => {
+  if (!HUBSPOT_PORTAL_ID || !HUBSPOT_FORM_GUID) return false;
+  try {
+    const res = await fetch(
+      'https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: [
+            { name: 'firstname', value: data['Prénom'] || '' },
+            { name: 'lastname', value: data['Nom'] || '' },
+            { name: 'email', value: data['Courriel'] || '' },
+            { name: 'phone', value: data['Téléphone'] || '' },
+            {
+              name: 'message',
+              value:
+                'Service demandé : ' + (data['Service'] || 'non précisé') +
+                '\nDisponibilités pour appel : ' + (data['Disponibilités pour appel'] || 'non précisé'),
+            },
+          ],
+          context: {
+            hutk: cookieHubSpot(),
+            pageUri: window.location.href,
+            pageName: document.title,
+          },
+        }),
+      }
+    );
+    return res.ok;
+  } catch (err) {
+    return false; // CRM injoignable : le lead part quand même par courriel
+  }
+};
+
 // ---------- Suivi Google Analytics ----------
 // Enregistre une demande de soumission. « methode » distingue l'envoi normal
 // du repli par courriel, pour qu'aucun lead ne soit invisible dans les rapports.
@@ -142,6 +200,9 @@ quoteForm.addEventListener('submit', async (e) => {
   data._subject = '🚗 Nouveau lead — ' + data['Prénom'] + ' ' + data['Nom'] + ' (' + data['Service'] + ')';
   data._template = 'table';
   data._captcha = 'false';
+
+  // Le CRM d'abord : le lead est enregistré même si le courriel échoue ensuite.
+  await envoyerVersHubSpot(data);
 
   try {
     const res = await fetch(FORM_ENDPOINT, {
