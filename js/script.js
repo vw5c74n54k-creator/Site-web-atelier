@@ -66,6 +66,7 @@ const envoyerVersHubSpot = async (data) => {
       'https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID,
       {
         method: 'POST',
+        keepalive: true,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fields: champs,
@@ -236,27 +237,45 @@ quoteForm.addEventListener('submit', async (e) => {
     'Montréal, QC\n' +
     'www.lateliermtl.com';
 
-  // Le CRM d'abord : le lead est enregistré même si le courriel échoue ensuite.
-  await envoyerVersHubSpot(data);
+  // Les deux envois partent EN MÊME TEMPS. `keepalive` les laisse se terminer
+  // même si le visiteur ferme l'onglet juste après.
+  envoyerVersHubSpot(data);
 
-  try {
-    const res = await fetch(FORM_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const out = await res.json().catch(() => ({}));
-    // FormSubmit répond 200 même en échec (ex. formulaire non activé)
-    if (out.success === 'false' || out.success === false) throw new Error(out.message || 'refus FormSubmit');
+  const envoiCourriel = (async () => {
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(data),
+        keepalive: true,
+      });
+      if (!res.ok) return { ok: false };
+      const out = await res.json().catch(() => ({}));
+      // FormSubmit répond 200 même en échec (ex. formulaire non activé)
+      if (out.success === 'false' || out.success === false) return { ok: false };
+      return { ok: true };
+    } catch (err) {
+      return { ok: false };
+    }
+  })();
 
+  // FormSubmit répond parfois en 0,1 s, parfois en 30 s. On ne fait pas patienter
+  // le client au-delà de DELAI_MAX : passé ce délai on confirme, l'envoi se
+  // poursuit seul en arrière-plan.
+  const DELAI_MAX = 2500;
+  const resultat = await Promise.race([
+    envoiCourriel,
+    new Promise((r) => setTimeout(() => r({ enCours: true }), DELAI_MAX)),
+  ]);
+
+  if (resultat.ok || resultat.enCours) {
     suivreLead('formulaire', data['Service']);
     formWrap.hidden = true;
     successBox.hidden = false;
     quoteForm.reset();
-  } catch (err) {
+  } else {
+    // Échec confirmé : repli sur le client courriel du visiteur, lead pré-rempli
     suivreLead('courriel', data['Service']);
-    // Repli : ouvre le client courriel du visiteur avec le lead pré-rempli
     const body = Object.entries(data)
       .filter(([k]) => !k.startsWith('_'))
       .map(([k, v]) => k + ' : ' + v)
@@ -265,7 +284,9 @@ quoteForm.addEventListener('submit', async (e) => {
       'mailto:' + LEAD_EMAIL +
       '?subject=' + encodeURIComponent('Demande de soumission — ' + data['Prénom'] + ' ' + data['Nom']) +
       '&body=' + encodeURIComponent(body);
-  } finally {
+  }
+
+  {
     submitBtn.disabled = false;
     submitBtn.innerHTML =
       'Envoyer ma demande <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
