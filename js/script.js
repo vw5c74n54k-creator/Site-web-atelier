@@ -12,6 +12,11 @@ const FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + LEAD_EMAIL;
 // Tant qu'elles sont vides, HubSpot est simplement ignoré : le site fonctionne normalement.
 const HUBSPOT_PORTAL_ID = '343546650';
 const HUBSPOT_FORM_GUID = 'd602489c-05e2-48e2-a58b-fd5a1a267d5b';
+// 'contact' = formulaire standard (crée une fiche contact)
+// 'ticket'  = formulaire de support (crée un contact ET un ticket dans le pipeline)
+// Pour passer aux tickets : créer le formulaire de support dans HubSpot, coller son
+// identifiant ci-dessus, puis mettre 'ticket' ici. Les deux doivent changer ensemble.
+const HUBSPOT_FORM_TYPE = 'contact';
 
 // Charge le code de suivi HubSpot (visiteurs, pages vues, association des leads)
 if (HUBSPOT_PORTAL_ID) {
@@ -32,6 +37,30 @@ const cookieHubSpot = () => {
 // Envoie le lead dans le CRM. Ne lève jamais d'erreur : l'envoi principal doit continuer.
 const envoyerVersHubSpot = async (data) => {
   if (!HUBSPOT_PORTAL_ID || !HUBSPOT_FORM_GUID) return false;
+
+  const service = data['Service'] || 'non précisé';
+  const dispo = data['Disponibilités pour appel'] || 'non précisé';
+  const resume = 'Service demandé : ' + service + '\nDisponibilités pour appel : ' + dispo;
+
+  const champs = [
+    { name: 'firstname', value: data['Prénom'] || '' },
+    { name: 'lastname', value: data['Nom'] || '' },
+    { name: 'email', value: data['Courriel'] || '' },
+    { name: 'phone', value: data['Téléphone'] || '' },
+  ];
+
+  if (HUBSPOT_FORM_TYPE === 'ticket') {
+    // objectTypeId 0-5 = ticket. Ces champs créent le dossier dans le pipeline.
+    champs.push({ objectTypeId: '0-5', name: 'subject', value: 'Demande de soumission — ' + service });
+    champs.push({
+      objectTypeId: '0-5',
+      name: 'content',
+      value: resume + '\nTéléphone : ' + (data['Téléphone'] || '') + '\nCourriel : ' + (data['Courriel'] || ''),
+    });
+  } else {
+    champs.push({ name: 'message', value: resume });
+  }
+
   try {
     const res = await fetch(
       'https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID,
@@ -39,18 +68,7 @@ const envoyerVersHubSpot = async (data) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fields: [
-            { name: 'firstname', value: data['Prénom'] || '' },
-            { name: 'lastname', value: data['Nom'] || '' },
-            { name: 'email', value: data['Courriel'] || '' },
-            { name: 'phone', value: data['Téléphone'] || '' },
-            {
-              name: 'message',
-              value:
-                'Service demandé : ' + (data['Service'] || 'non précisé') +
-                '\nDisponibilités pour appel : ' + (data['Disponibilités pour appel'] || 'non précisé'),
-            },
-          ],
+          fields: champs,
           context: {
             hutk: cookieHubSpot(),
             pageUri: window.location.href,
